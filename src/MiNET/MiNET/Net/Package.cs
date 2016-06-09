@@ -33,7 +33,7 @@ namespace MiNET.Net
 
 		public byte Id;
 
-		protected MemoryStream _buffer;
+		public MemoryStream _buffer;
 		private BinaryWriter _writer;
 		private BinaryReader _reader;
 		private Stopwatch _timer = new Stopwatch();

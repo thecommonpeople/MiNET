@@ -247,6 +247,11 @@ namespace MiNET
 				HandleMcpeRequestChunkRadius((McpeRequestChunkRadius) message);
 			}
 
+			else if (typeof(McpeChunkRadiusUpdate) == message.GetType())
+			{
+				HandleMcpeChunkRadiusUpdate((McpeChunkRadiusUpdate)message);
+			}
+
 			else if (typeof (McpeMapInfoRequest) == message.GetType())
 			{
 				HandleMcpeMapInfoRequest((McpeMapInfoRequest) message);
@@ -264,8 +269,9 @@ namespace MiNET
 
 			else
 			{
-				Log.Error($"Unhandled package: {message.GetType().Name} for user: {Username}, IP {EndPoint.Address}");
-				Disconnect("Unhandled package", false);
+				Log.Error($"Unhandled package: {message.GetType().Name} for user: {Username}, IP {EndPoint.Address}\n{Package.HexDump(message._buffer.ToArray())}");
+				
+				//Disconnect("Unhandled package", false);
 				return;
 			}
 
@@ -355,6 +361,21 @@ namespace MiNET
 				ThreadPool.QueueUserWorkItem(delegate(object state) { SendChunksForKnownPosition(); });
 			}
 		}
+
+		protected void HandleMcpeChunkRadiusUpdate(McpeChunkRadiusUpdate message)
+		{
+			Log.Debug($"Told server a chunk radius of: {message.chunkRadius}");
+
+			ChunkRadius = Math.Max(5, Math.Min(message.chunkRadius, MaxViewDistance));
+
+			SendChunkRadiusUpdate();
+
+			if (_completedStartSequence)
+			{
+				ThreadPool.QueueUserWorkItem(delegate (object state) { SendChunksForKnownPosition(); });
+			}
+		}
+
 
 		protected virtual void HandleNewIncomingConnection(NewIncomingConnection message)
 		{
@@ -661,7 +682,7 @@ namespace MiNET
 				Username = message.username;
 			}
 
-			if (message.protocol != 70)
+			if (message.protocol != 65598)
 			{
 				Server.GreylistManager.Greylist(EndPoint.Address, 30000);
 				Disconnect(string.Format("Wrong version ({0}) of Minecraft Pocket Edition, please upgrade.", message.protocol));
